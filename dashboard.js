@@ -42,9 +42,226 @@ let selectedService = null
 
 // Initialize dashboard
 document.addEventListener("DOMContentLoaded", () => {
-  loadUserData()
-  loadOrders()
+  const currentUser = JSON.parse(localStorage.getItem("currentUser"))
+  if (!currentUser) {
+    window.location.href = "index.html"
+    return
+  }
+
+  // Cargar datos del usuario
+  loadUserDataInitial(currentUser)
+  loadServices()
+  loadUserOrders(currentUser)
+
+  // Configurar eventos
+  setupEventListeners()
 })
+
+function loadUserDataInitial(user) {
+  document.getElementById("welcomeMessage").textContent = `¡Bienvenido, ${user.username}!`
+  document.getElementById("userBalance").textContent = `$${user.balance.toFixed(2)}`
+  document.getElementById("userEmail").textContent = user.email
+}
+
+function loadServices() {
+  // Cargar servicios desde localStorage o usar datos predeterminados
+  let services = JSON.parse(localStorage.getItem("jorlingServices"))
+
+  if (!services) {
+    // Datos predeterminados si no hay servicios guardados
+    services = [
+      {
+        id: 1,
+        platform: "instagram",
+        name: "Instagram Seguidores",
+        price: 0.01,
+        minQuantity: 100,
+        maxQuantity: 10000,
+        description: "Seguidores reales y activos para tu cuenta de Instagram",
+      },
+      {
+        id: 2,
+        platform: "instagram",
+        name: "Instagram Likes",
+        price: 0.005,
+        minQuantity: 100,
+        maxQuantity: 20000,
+        description: "Likes reales para tus publicaciones de Instagram",
+      },
+      {
+        id: 3,
+        platform: "facebook",
+        name: "Facebook Seguidores",
+        price: 0.02,
+        minQuantity: 100,
+        maxQuantity: 5000,
+        description: "Seguidores reales para tu página de Facebook",
+      },
+      {
+        id: 4,
+        platform: "facebook",
+        name: "Facebook Likes",
+        price: 0.01,
+        minQuantity: 100,
+        maxQuantity: 10000,
+        description: "Likes reales para tus publicaciones de Facebook",
+      },
+      {
+        id: 5,
+        platform: "youtube",
+        name: "YouTube Suscriptores",
+        price: 0.05,
+        minQuantity: 100,
+        maxQuantity: 2000,
+        description: "Suscriptores reales para tu canal de YouTube",
+      },
+      {
+        id: 6,
+        platform: "youtube",
+        name: "YouTube Visualizaciones",
+        price: 0.01,
+        minQuantity: 1000,
+        maxQuantity: 50000,
+        description: "Visualizaciones reales para tus videos de YouTube",
+      },
+      {
+        id: 7,
+        platform: "tiktok",
+        name: "TikTok Seguidores",
+        price: 0.02,
+        minQuantity: 100,
+        maxQuantity: 5000,
+        description: "Seguidores reales para tu cuenta de TikTok",
+      },
+      {
+        id: 8,
+        platform: "tiktok",
+        name: "TikTok Likes",
+        price: 0.01,
+        minQuantity: 100,
+        maxQuantity: 10000,
+        description: "Likes reales para tus videos de TikTok",
+      },
+    ]
+
+    // Guardar servicios en localStorage
+    localStorage.setItem("jorlingServices", JSON.stringify(services))
+  }
+
+  // Agrupar servicios por plataforma
+  const servicesByPlatform = {}
+  services.forEach((service) => {
+    if (!servicesByPlatform[service.platform]) {
+      servicesByPlatform[service.platform] = []
+    }
+    servicesByPlatform[service.platform].push(service)
+  })
+
+  // Crear menú de servicios
+  const servicesDropdown = document.getElementById("servicesDropdown")
+  servicesDropdown.innerHTML = ""
+
+  // Añadir opción predeterminada
+  const defaultOption = document.createElement("div")
+  defaultOption.className = "dropdown-item"
+  defaultOption.textContent = "Seleccionar servicio"
+  defaultOption.onclick = () => selectService(null)
+  servicesDropdown.appendChild(defaultOption)
+
+  // Añadir servicios agrupados por plataforma
+  for (const platform in servicesByPlatform) {
+    const platformServices = servicesByPlatform[platform]
+
+    // Añadir separador
+    const separator = document.createElement("div")
+    separator.className = "dropdown-separator"
+    separator.textContent = getPlatformName(platform)
+    servicesDropdown.appendChild(separator)
+
+    // Añadir servicios de la plataforma
+    platformServices.forEach((service) => {
+      const serviceItem = document.createElement("div")
+      serviceItem.className = "dropdown-item"
+      serviceItem.textContent = service.name
+      serviceItem.onclick = () => selectService(service)
+      servicesDropdown.appendChild(serviceItem)
+    })
+  }
+}
+
+function getPlatformName(platform) {
+  const platforms = {
+    instagram: "Instagram",
+    facebook: "Facebook",
+    youtube: "YouTube",
+    tiktok: "TikTok",
+  }
+  return platforms[platform] || platform
+}
+
+function loadUserOrders(user) {
+  const ordersList = document.getElementById("ordersList")
+  ordersList.innerHTML = ""
+
+  if (!user.orders || user.orders.length === 0) {
+    ordersList.innerHTML = "<p>No hay pedidos realizados</p>"
+    return
+  }
+
+  user.orders.forEach((order) => {
+    const orderItem = document.createElement("div")
+    orderItem.className = "order-item"
+    orderItem.innerHTML = `
+      <p><strong>Servicio:</strong> ${order.service}</p>
+      <p><strong>Cantidad:</strong> ${order.quantity}</p>
+      <p><strong>Estado:</strong> ${order.status}</p>
+    `
+    ordersList.appendChild(orderItem)
+  })
+}
+
+function setupEventListeners() {
+  document.getElementById("orderForm").addEventListener("submit", handleOrderSubmit)
+}
+
+function handleOrderSubmit(event) {
+  event.preventDefault()
+
+  const selectedService = document.getElementById("selectedService").value
+  const quantity = Number.parseInt(document.getElementById("quantity").value)
+  const link = document.getElementById("link").value
+
+  // Validar datos
+  if (!selectedService || !quantity || !link) {
+    alert("Por favor, complete todos los campos")
+    return
+  }
+
+  // Crear pedido
+  const order = {
+    id: Date.now(),
+    service: selectedService,
+    quantity: quantity,
+    link: link,
+    status: "Pendiente",
+  }
+
+  // Actualizar datos del usuario
+  const currentUser = JSON.parse(localStorage.getItem("currentUser"))
+  currentUser.orders = currentUser.orders || []
+  currentUser.orders.push(order)
+
+  localStorage.setItem("currentUser", JSON.stringify(currentUser))
+
+  // Mostrar mensaje de éxito
+  alert("Pedido realizado con éxito")
+
+  // Limpiar formulario
+  document.getElementById("orderForm").reset()
+
+  // Recargar pedidos
+  loadUserOrders(currentUser)
+}
 
 function loadUserData() {
   // Update user info from latest data
@@ -132,8 +349,10 @@ function selectService(service) {
   quantityInput.value = ""
   document.getElementById("totalPrice").textContent = "$0.00"
 
-  // Close services list
-  toggleServices()
+  // CERRAR EXPLÍCITAMENTE el menú de servicios
+  const servicesList = document.getElementById("servicesList")
+  servicesList.classList.remove("show")
+  document.getElementById("servicesChevron").style.transform = "rotate(0deg)"
 
   showMessage(`Servicio ${serviceNames[service]} seleccionado`, "success")
 }
