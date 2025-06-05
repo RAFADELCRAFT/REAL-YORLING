@@ -1,547 +1,245 @@
-// Global variables
-let currentUser = null
-let users = []
-let receipts = []
-let currentPhoneNumber = ""
+// Database simulation (in production, this would be handled by the backend)
+const users = JSON.parse(localStorage.getItem("jorlingUsers")) || []
 
-// Initialize app
-document.addEventListener("DOMContentLoaded", () => {
-  loadData()
-  setupEventListeners()
-  updatePinDots()
-})
-
-// Load data from localStorage
-function loadData() {
-  // Load users
-  const savedUsers = localStorage.getItem("yorling_users")
-  if (savedUsers) {
-    users = JSON.parse(savedUsers)
-  } else {
-    // Initialize with admin user
-    users = [
-      {
-        id: "admin_001",
-        phoneNumber: "1234567890",
-        pin: "1234",
-        isActive: true,
-        isAdmin: true,
-        fullName: "Administrador",
-        balance: 1000000,
-        ipAddress: getCurrentIP(),
-        registrationDate: new Date().toISOString(),
-        lastLogin: new Date().toISOString(),
-      },
-    ]
-    saveUsers()
-  }
-
-  // Load receipts
-  const savedReceipts = localStorage.getItem("yorling_receipts")
-  if (savedReceipts) {
-    receipts = JSON.parse(savedReceipts)
-  }
-}
-
-// Save data to localStorage
-function saveUsers() {
-  localStorage.setItem("yorling_users", JSON.stringify(users))
-}
-
-function saveReceipts() {
-  localStorage.setItem("yorling_receipts", JSON.stringify(receipts))
-}
-
-// Get current IP (simulated)
-function getCurrentIP() {
-  return `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`
-}
-
-// Setup event listeners
-function setupEventListeners() {
-  // Login form
-  document.getElementById("loginForm").addEventListener("submit", handleLogin)
-
-  // Register form
-  document.getElementById("registerForm").addEventListener("submit", handleRegister)
-
-  // PIN form
-  document.getElementById("pinForm").addEventListener("submit", handlePinSubmit)
-
-  // PIN input for dots update
-  document.getElementById("userPin").addEventListener("input", updatePinDots)
-  document.getElementById("regPin").addEventListener("input", function () {
-    // Ensure only numbers
-    this.value = this.value.replace(/\D/g, "")
-  })
-}
-
-// Screen navigation
-function showScreen(screenId) {
-  document.querySelectorAll(".screen").forEach((screen) => {
-    screen.classList.remove("active")
-  })
-  document.getElementById(screenId).classList.add("active")
-}
-
+// Modal functions
 function showLogin() {
-  showScreen("loginScreen")
-  clearForms()
+  document.getElementById("loginModal").style.display = "block"
 }
 
 function showRegister() {
-  showScreen("registerScreen")
-  clearForms()
+  document.getElementById("registerModal").style.display = "block"
 }
 
-function showPin() {
-  showScreen("pinScreen")
-  document.getElementById("pinPhoneDisplay").textContent = `Para el número ${currentPhoneNumber}`
+function showForgotPassword() {
+  document.getElementById("forgotModal").style.display = "block"
+  closeModal("loginModal")
 }
 
-function showDashboard() {
-  showScreen("dashboardScreen")
-  updateDashboard()
+function closeModal(modalId) {
+  document.getElementById(modalId).style.display = "none"
 }
 
-function showAdmin() {
-  showScreen("adminScreen")
-  updateAdminPanel()
+// Message functions
+function showMessage(text, type = "success") {
+  const messageElement = document.getElementById(type + "Message")
+  const textElement = document.getElementById(type + "Text")
+
+  textElement.textContent = text
+  messageElement.style.display = "flex"
+
+  setTimeout(() => {
+    messageElement.style.display = "none"
+  }, 5000)
 }
 
-// Clear forms
-function clearForms() {
-  document.querySelectorAll("input").forEach((input) => {
-    input.value = ""
-  })
-  hideError()
-  updatePinDots()
-}
-
-// Error handling
-function showError(elementId, message) {
-  const errorElement = document.getElementById(elementId)
-  errorElement.textContent = message
-  errorElement.style.display = "block"
-}
-
-function hideError() {
-  document.querySelectorAll(".error-message").forEach((error) => {
-    error.style.display = "none"
-  })
-}
-
-// PIN visibility toggle
-function togglePinVisibility(inputId) {
-  const input = document.getElementById(inputId)
-  const icon = input.nextElementSibling.querySelector("i")
-
-  if (input.type === "password") {
-    input.type = "text"
-    icon.className = "fas fa-eye-slash"
-  } else {
-    input.type = "password"
-    icon.className = "fas fa-eye"
-  }
-}
-
-// Update PIN dots
-function updatePinDots() {
-  const pinInput = document.getElementById("userPin")
-  const dots = document.querySelectorAll(".pin-dots .dot")
-
-  if (pinInput && dots.length > 0) {
-    const pinLength = pinInput.value.length
-    dots.forEach((dot, index) => {
-      if (index < pinLength) {
-        dot.classList.add("filled")
-      } else {
-        dot.classList.remove("filled")
-      }
-    })
-  }
-}
-
-// Authentication functions
-function handleLogin(e) {
+// Form handlers
+document.getElementById("registerForm").addEventListener("submit", async (e) => {
   e.preventDefault()
-  hideError()
 
-  const phoneNumber = document.getElementById("phoneNumber").value.trim()
+  const username = document.getElementById("registerUsername").value
+  const email = document.getElementById("registerEmail").value
+  const password = document.getElementById("registerPassword").value
+  const confirmPassword = document.getElementById("confirmPassword").value
 
-  if (!phoneNumber) {
-    showError("errorMessage", "Por favor ingresa tu número de teléfono")
+  // Validation
+  if (password !== confirmPassword) {
+    showMessage("Las contraseñas no coinciden", "error")
     return
   }
 
-  const user = users.find((u) => u.phoneNumber === phoneNumber)
-
-  if (!user) {
-    showError("errorMessage", "Este número no está registrado. Contacta a @AnonyMysql en Telegram")
+  if (users.find((user) => user.email === email)) {
+    showMessage("Este correo ya está registrado", "error")
     return
   }
 
-  if (!user.isActive && !user.isAdmin) {
-    showError("errorMessage", "Tu cuenta no está activada. Contacta a @AnonyMysql en Telegram")
+  if (users.find((user) => user.username === username)) {
+    showMessage("Este nombre de usuario ya existe", "error")
     return
   }
 
-  currentPhoneNumber = phoneNumber
-  showPin()
-}
-
-function handleRegister(e) {
-  e.preventDefault()
-  hideError()
-
-  const fullName = document.getElementById("regFullName").value.trim()
-  const phoneNumber = document.getElementById("regPhoneNumber").value.trim()
-  const pin = document.getElementById("regPin").value.trim()
-
-  if (!fullName || !phoneNumber || pin.length !== 4) {
-    showError("regErrorMessage", "Por favor completa todos los campos correctamente")
-    return
-  }
-
-  const existingUser = users.find((u) => u.phoneNumber === phoneNumber)
-  if (existingUser) {
-    showError("regErrorMessage", "Este número ya está registrado")
-    return
-  }
-
+  // Create new user
   const newUser = {
-    id: `user_${Date.now()}`,
-    phoneNumber,
-    pin,
-    isActive: false,
-    isAdmin: false,
-    fullName,
-    balance: 0,
-    ipAddress: getCurrentIP(),
-    registrationDate: new Date().toISOString(),
-    lastLogin: new Date().toISOString(),
+    id: Date.now(),
+    username: username,
+    email: email,
+    password: password, // In production, this should be hashed
+    balance: 0.0,
+    orders: [],
+    createdAt: new Date().toISOString(),
   }
 
   users.push(newUser)
-  saveUsers()
+  localStorage.setItem("jorlingUsers", JSON.stringify(users))
 
-  showError("regErrorMessage", "Registro exitoso. Contacta a @AnonyMysql en Telegram para activar tu cuenta")
+  showMessage("¡Registro exitoso! Ya puedes iniciar sesión", "success")
+  closeModal("registerModal")
 
-  setTimeout(() => {
-    showLogin()
-  }, 3000)
-}
+  // Clear form
+  document.getElementById("registerForm").reset()
+})
 
-function handlePinSubmit(e) {
+document.getElementById("loginForm").addEventListener("submit", (e) => {
   e.preventDefault()
-  hideError()
 
-  const pin = document.getElementById("userPin").value.trim()
+  const emailOrUsername = document.getElementById("loginEmail").value
+  const password = document.getElementById("loginPassword").value
 
-  if (pin.length !== 4) {
-    showError("pinErrorMessage", "El PIN debe tener 4 dígitos")
-    return
-  }
+  const user = users.find(
+    (u) => (u.email === emailOrUsername || u.username === emailOrUsername) && u.password === password,
+  )
 
-  const user = users.find((u) => u.phoneNumber === currentPhoneNumber && u.pin === pin)
+  if (user) {
+    localStorage.setItem("currentUser", JSON.stringify(user))
+    showMessage("¡Inicio de sesión exitoso!", "success")
+    closeModal("loginModal")
 
-  if (!user) {
-    showError("pinErrorMessage", "PIN incorrecto")
-    return
-  }
-
-  // Update user login info
-  user.lastLogin = new Date().toISOString()
-  user.ipAddress = getCurrentIP()
-  saveUsers()
-
-  currentUser = user
-
-  if (user.isAdmin) {
-    showAdmin()
+    // Redirect to dashboard after 2 seconds
+    setTimeout(() => {
+      window.location.href = "dashboard.html"
+    }, 2000)
   } else {
-    showDashboard()
+    showMessage("Credenciales incorrectas", "error")
   }
-}
+})
 
-// Dashboard functions
-function updateDashboard() {
-  if (!currentUser) return
+document.getElementById("forgotForm").addEventListener("submit", async (e) => {
+  e.preventDefault()
 
-  document.getElementById("userName").textContent = `Hola, ${currentUser.fullName}`
-  document.getElementById("userBalance").textContent = currentUser.balance.toLocaleString()
-  document.getElementById("accountPhone").textContent = currentUser.phoneNumber
-  document.getElementById("lastLogin").textContent = new Date(currentUser.lastLogin).toLocaleString()
-  document.getElementById("currentIP").textContent = currentUser.ipAddress
+  const email = document.getElementById("forgotEmail").value
+  const user = users.find((u) => u.email === email)
 
-  updateUserReceipts()
-  updateServiceButtons()
-}
+  if (user) {
+    // Simulate sending email
+    showMessage("Se ha enviado un enlace de recuperación a tu correo", "success")
+    closeModal("forgotModal")
 
-function updateUserReceipts() {
-  const container = document.getElementById("receiptsContainer")
-  const userReceipts = receipts.filter((r) => r.userId === currentUser.id)
-
-  if (userReceipts.length === 0) {
-    container.innerHTML = '<p class="no-receipts">No tienes comprobantes</p>'
-    return
+    // In production, this would trigger an actual email API
+    console.log("Password reset email would be sent to:", email)
+  } else {
+    showMessage("No se encontró una cuenta con este correo", "error")
   }
+})
 
-  container.innerHTML = userReceipts
-    .slice(0, 5)
-    .map(
-      (receipt) => `
-        <div class="receipt-item">
-            <div class="receipt-header">
-                <span class="receipt-number">${receipt.receiptNumber}</span>
-                <span class="receipt-amount">$${receipt.amount.toLocaleString()}</span>
-            </div>
-            <div class="receipt-date">${receipt.date}</div>
-            <div style="font-size: 0.9rem; color: #666;">${receipt.concept}</div>
-        </div>
-    `,
-    )
-    .join("")
-}
-
-function updateServiceButtons() {
-  const buttons = document.querySelectorAll(".btn-service")
-  buttons.forEach((button) => {
-    const price = Number.parseInt(button.getAttribute("onclick").match(/\d+/)[0])
-    button.disabled = currentUser.balance < price
+// Close modals when clicking outside
+window.onclick = (event) => {
+  const modals = ["loginModal", "registerModal", "forgotModal"]
+  modals.forEach((modalId) => {
+    const modal = document.getElementById(modalId)
+    if (event.target === modal) {
+      closeModal(modalId)
+    }
   })
 }
 
-function purchaseService(serviceType, amount) {
-  if (currentUser.balance < amount) {
-    alert("Saldo insuficiente")
-    return
+// Electric effects
+function createElectricParticle() {
+  const particle = document.createElement("div")
+  particle.style.position = "fixed"
+  particle.style.width = "2px"
+  particle.style.height = "2px"
+  particle.style.background = "#00ffff"
+  particle.style.borderRadius = "50%"
+  particle.style.pointerEvents = "none"
+  particle.style.zIndex = "999"
+  particle.style.boxShadow = "0 0 10px #00ffff"
+
+  particle.style.left = Math.random() * window.innerWidth + "px"
+  particle.style.top = Math.random() * window.innerHeight + "px"
+
+  document.body.appendChild(particle)
+
+  // Animate particle
+  const animation = particle.animate(
+    [
+      { opacity: 0, transform: "scale(0)" },
+      { opacity: 1, transform: "scale(1)" },
+      { opacity: 0, transform: "scale(0)" },
+    ],
+    {
+      duration: 2000,
+      easing: "ease-in-out",
+    },
+  )
+
+  animation.onfinish = () => {
+    particle.remove()
   }
-
-  const serviceNames = {
-    premium: "Servicio Premium",
-    bot: "Bot Social Media",
-    analytics: "Análisis Avanzado",
-    security: "Seguridad Plus",
-  }
-
-  const receiptNumber = generateReceipt(serviceNames[serviceType], amount)
-
-  // Update user balance
-  currentUser.balance -= amount
-  const userIndex = users.findIndex((u) => u.id === currentUser.id)
-  users[userIndex] = currentUser
-  saveUsers()
-
-  alert(`${serviceNames[serviceType]} activado exitosamente!\nComprobante: ${receiptNumber}`)
-  updateDashboard()
 }
 
-function generateReceipt(serviceName, amount) {
-  const receiptNumber = `YOR${Date.now().toString().slice(-8)}`
-  const newReceipt = {
-    id: `receipt_${Date.now()}`,
-    type: "Servicio",
-    amount: amount,
-    recipientName: "REAL YORLING",
-    concept: serviceName,
-    date: new Date().toLocaleString(),
-    receiptNumber: receiptNumber,
-    userId: currentUser.id,
-  }
+// Create electric particles periodically
+setInterval(createElectricParticle, 500)
 
-  receipts.unshift(newReceipt)
-  saveReceipts()
+// Animaciones para contadores en tiempo real
+function animateCounters() {
+  const counters = [
+    { id: "totalViews", target: 15847293, increment: 1247 },
+    { id: "totalFollowers", target: 2456891, increment: 89 },
+    { id: "totalLikes", target: 8923456, increment: 456 },
+    { id: "liveViews", target: 1234, increment: 12 },
+    { id: "liveFollowers", target: 567, increment: 3 },
+    { id: "activeOrders", target: 23, increment: 1 },
+  ]
 
-  return receiptNumber
-}
+  counters.forEach((counter) => {
+    const element = document.getElementById(counter.id)
+    if (element) {
+      let current = 0
+      const increment = counter.target / 100
 
-// Admin functions
-function updateAdminPanel() {
-  updateUsersTab()
-  updateBalanceTab()
-  updateAdminReceiptsTab()
-}
+      const updateCounter = () => {
+        if (current < counter.target) {
+          current += increment
+          if (counter.id.includes("total")) {
+            element.textContent = Math.floor(current).toLocaleString()
+          } else {
+            element.textContent = Math.floor(current)
+          }
+          setTimeout(updateCounter, 50)
+        } else {
+          element.textContent = counter.target.toLocaleString()
+        }
+      }
 
-function showAdminTab(tabName) {
-  // Update tab buttons
-  document.querySelectorAll(".tab-btn").forEach((btn) => {
-    btn.classList.remove("active")
+      updateCounter()
+    }
   })
-  event.target.classList.add("active")
+}
 
-  // Update tab content
-  document.querySelectorAll(".tab-content").forEach((content) => {
-    content.classList.remove("active")
-  })
-  document.getElementById(tabName + "Tab").classList.add("active")
+// Actualizar contadores en vivo cada 5 segundos
+function updateLiveCounters() {
+  const liveViews = document.getElementById("liveViews")
+  const liveFollowers = document.getElementById("liveFollowers")
+  const activeOrders = document.getElementById("activeOrders")
 
-  // Load tab-specific data
-  switch (tabName) {
-    case "users":
-      updateUsersTab()
-      break
-    case "balance":
-      updateBalanceTab()
-      break
-    case "receipts":
-      updateAdminReceiptsTab()
-      break
+  if (liveViews) {
+    const currentViews = Number.parseInt(liveViews.textContent) || 0
+    liveViews.textContent = currentViews + Math.floor(Math.random() * 15) + 5
+  }
+
+  if (liveFollowers) {
+    const currentFollowers = Number.parseInt(liveFollowers.textContent) || 0
+    liveFollowers.textContent = currentFollowers + Math.floor(Math.random() * 8) + 2
+  }
+
+  if (activeOrders) {
+    const currentOrders = Number.parseInt(activeOrders.textContent) || 0
+    const change = Math.floor(Math.random() * 3) - 1 // -1, 0, o 1
+    activeOrders.textContent = Math.max(15, currentOrders + change)
   }
 }
 
-function updateUsersTab() {
-  const container = document.getElementById("usersContainer")
-  const regularUsers = users.filter((u) => !u.isAdmin)
+// Initialize
+document.addEventListener("DOMContentLoaded", () => {
+  // Delay para que se vean las animaciones
+  setTimeout(animateCounters, 1000)
 
-  if (regularUsers.length === 0) {
-    container.innerHTML = '<p class="no-receipts">No hay usuarios registrados</p>'
-    return
+  // Actualizar contadores en vivo cada 5 segundos
+  setInterval(updateLiveCounters, 5000)
+
+  // Check if user is already logged in
+  const currentUser = localStorage.getItem("currentUser")
+  if (currentUser && window.location.pathname.includes("index.html")) {
+    // User is logged in, could redirect to dashboard
+    console.log("User already logged in")
   }
-
-  container.innerHTML = regularUsers
-    .map(
-      (user) => `
-        <div class="user-item">
-            <div class="user-info-admin">
-                <h4>${user.fullName}</h4>
-                <p>Teléfono: ${user.phoneNumber}</p>
-                <p>IP: ${user.ipAddress}</p>
-                <p>Registro: ${new Date(user.registrationDate).toLocaleDateString()}</p>
-                <p>Saldo: $${user.balance.toLocaleString()}</p>
-            </div>
-            <div class="user-actions">
-                <span class="status-badge ${user.isActive ? "status-active" : "status-inactive"}">
-                    ${user.isActive ? "Activo" : "Inactivo"}
-                </span>
-                <button class="btn-toggle" onclick="toggleUserStatus('${user.id}')">
-                    ${user.isActive ? "Desactivar" : "Activar"}
-                </button>
-                <button class="btn-delete" onclick="deleteUser('${user.id}')">
-                    Eliminar
-                </button>
-            </div>
-        </div>
-    `,
-    )
-    .join("")
-}
-
-function updateBalanceTab() {
-  // Update user select
-  const userSelect = document.getElementById("userSelect")
-  const regularUsers = users.filter((u) => !u.isAdmin)
-
-  userSelect.innerHTML =
-    '<option value="">Seleccionar usuario</option>' +
-    regularUsers
-      .map(
-        (user) => `
-            <option value="${user.id}">${user.fullName} - ${user.phoneNumber}</option>
-        `,
-      )
-      .join("")
-
-  // Update balances display
-  const container = document.getElementById("balancesContainer")
-  container.innerHTML = regularUsers
-    .map(
-      (user) => `
-        <div class="balance-item">
-            <div class="user-info-admin">
-                <h4>${user.fullName}</h4>
-                <p>${user.phoneNumber}</p>
-                <p>IP: ${user.ipAddress}</p>
-            </div>
-            <div style="text-align: right;">
-                <div style="font-size: 1.5rem; font-weight: bold; color: #28a745;">
-                    $${user.balance.toLocaleString()}
-                </div>
-                <div style="font-size: 0.8rem; color: #666;">
-                    Último acceso: ${new Date(user.lastLogin).toLocaleDateString()}
-                </div>
-            </div>
-        </div>
-    `,
-    )
-    .join("")
-}
-
-function updateAdminReceiptsTab() {
-  const container = document.getElementById("adminReceiptsContainer")
-
-  if (receipts.length === 0) {
-    container.innerHTML = '<p class="no-receipts">No hay comprobantes generados</p>'
-    return
-  }
-
-  container.innerHTML = receipts
-    .slice(0, 20)
-    .map((receipt) => {
-      const user = users.find((u) => u.id === receipt.userId)
-      return `
-            <div class="receipt-item">
-                <div class="receipt-header">
-                    <span class="receipt-number">${receipt.receiptNumber}</span>
-                    <span class="receipt-amount">$${receipt.amount.toLocaleString()}</span>
-                </div>
-                <div style="font-size: 0.9rem; color: #666; margin: 5px 0;">
-                    Usuario: ${user ? user.fullName : "Usuario eliminado"}
-                </div>
-                <div style="font-size: 0.9rem; color: #666;">${receipt.concept}</div>
-                <div class="receipt-date">${receipt.date}</div>
-            </div>
-        `
-    })
-    .join("")
-}
-
-function toggleUserStatus(userId) {
-  const userIndex = users.findIndex((u) => u.id === userId)
-  if (userIndex !== -1) {
-    users[userIndex].isActive = !users[userIndex].isActive
-    saveUsers()
-    updateUsersTab()
-    updateBalanceTab()
-  }
-}
-
-function deleteUser(userId) {
-  if (confirm("¿Estás seguro de que quieres eliminar este usuario?")) {
-    users = users.filter((u) => u.id !== userId)
-    receipts = receipts.filter((r) => r.userId !== userId)
-    saveUsers()
-    saveReceipts()
-    updateUsersTab()
-    updateBalanceTab()
-  }
-}
-
-function addBalance() {
-  const userId = document.getElementById("userSelect").value
-  const amount = Number.parseFloat(document.getElementById("balanceAmount").value)
-
-  if (!userId || !amount || amount <= 0) {
-    alert("Por favor selecciona un usuario y un monto válido")
-    return
-  }
-
-  const userIndex = users.findIndex((u) => u.id === userId)
-  if (userIndex !== -1) {
-    users[userIndex].balance += amount
-    saveUsers()
-
-    // Clear form
-    document.getElementById("userSelect").value = ""
-    document.getElementById("balanceAmount").value = ""
-
-    alert(`Saldo agregado exitosamente: $${amount.toLocaleString()}`)
-    updateBalanceTab()
-  }
-}
-
-function logout() {
-  currentUser = null
-  currentPhoneNumber = ""
-  showLogin()
-}
+})
