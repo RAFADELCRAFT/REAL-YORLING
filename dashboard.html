@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Jorling Seguidores</title>
+    <link rel="stylesheet" href="dashboard.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="electric-bg"></div>
+    
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="logo">
+                <h1><i class="fas fa-bolt"></i> Jorling Seguidores</h1>
+            </div>
+            <div class="header-menu">
+                <button class="menu-toggle" onclick="toggleMenu()">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="dropdown-menu" id="dropdownMenu">
+                    <a href="#" onclick="showNewOrder()"><i class="fas fa-plus"></i> Nueva Orden</a>
+                    <a href="#" onclick="showOrders()"><i class="fas fa-list"></i> Pedidos</a>
+                    <a href="#" onclick="showAddFunds()"><i class="fas fa-wallet"></i> Añadir Fondos</a>
+                    <a href="#" onclick="showRefunds()"><i class="fas fa-undo"></i> Reembolsos</a>
+                    <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Dashboard Content -->
+    <main class="dashboard">
+        <div class="container">
+            <!-- User Info Cards -->
+            <div class="info-cards">
+                <div class="info-card electric-border">
+                    <div class="card-content">
+                        <i class="fas fa-user"></i>
+                        <h3>Usuario</h3>
+                        <p id="username">Cargando...</p>
+                    </div>
+                </div>
+                
+                <div class="info-card electric-border">
+                    <div class="card-content">
+                        <i class="fas fa-dollar-sign"></i>
+                        <h3>Saldo</h3>
+                        <p id="balance">$0.00</p>
+                    </div>
+                </div>
+                
+                <div class="info-card electric-border">
+                    <div class="card-content">
+                        <i class="fas fa-shopping-cart"></i>
+                        <h3>Pedidos Realizados</h3>
+                        <p id="totalOrders">0</p>
+                    </div>
+                </div>
+                
+                <div class="info-card electric-border">
+                    <div class="card-content">
+                        <i class="fas fa-check-circle"></i>
+                        <h3>Pedidos Completados</h3>
+                        <p id="completedOrders">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Services Section -->
+            <div class="services-section">
+                <h2>Servicios Disponibles</h2>
+                <div class="services-toggle" onclick="toggleServices()">
+                    <div class="toggle-header">
+                        <span>Seleccionar Servicio</span>
+                        <i class="fas fa-chevron-down" id="servicesChevron"></i>
+                    </div>
+                    <div class="services-list" id="servicesList">
+                        <div class="service-option" onclick="selectService('instagram')">
+                            <i class="fab fa-instagram"></i>
+                            <span>Instagram Seguidores</span>
+                        </div>
+                        <div class="service-option" onclick="selectService('tiktok')">
+                            <i class="fab fa-tiktok"></i>
+                            <span>TikTok Seguidores</span>
+                        </div>
+                        <div class="service-option" onclick="selectService('youtube_subscribers')">
+                            <i class="fab fa-youtube"></i>
+                            <span>YouTube Suscriptores</span>
+                        </div>
+                        <div class="service-option" onclick="selectService('youtube_views')">
+                            <i class="fab fa-youtube"></i>
+                            <span>YouTube Horas de Reproducción</span>
+                        </div>
+                        <div class="service-option" onclick="selectService('facebook')">
+                            <i class="fab fa-facebook"></i>
+                            <span>Facebook Seguidores</span>
+                        </div>
+                        <div class="service-option" onclick="selectService('twitter')">
+                            <i class="fab fa-twitter"></i>
+                            <span>X (Twitter) Seguidores</span>
+                        </div>
+                        <div class="service-option" onclick="selectService('twitch')">
+                            <i class="fab fa-twitch"></i>
+                            <span>Twitch Seguidores</span>
+                        </div>
+                        <div class="service-option" onclick="selectService('telegram')">
+                            <i class="fab fa-telegram"></i>
+                            <span>Telegram Miembros</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Form -->
+            <div class="order-section" id="orderSection" style="display: none;">
+                <div class="order-form electric-form">
+                    <h3 id="selectedServiceTitle">Selecciona un servicio</h3>
+                    <form id="orderForm">
+                        <div class="input-group">
+                            <label for="serviceUrl">URL del perfil/contenido:</label>
+                            <input type="url" id="serviceUrl" placeholder="https://..." required>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="quantity">Cantidad:</label>
+                            <input type="number" id="quantity" min="100" placeholder="Ingresa la cantidad (mínimo 100)" required>
+                            <small>Mínimo: 100 seguidores - Precio: $0.0096 por cada 100</small>
+                        </div>
+                        
+                        <div class="price-info">
+                            <p>Total a pagar: <span id="totalPrice">$0.00</span></p>
+                            <small style="color: #999;">Ingresa una cantidad para ver el precio total</small>
+                        </div>
+                        
+                        <button type="submit" class="btn-order">
+                            <i class="fas fa-bolt"></i> Realizar Pedido
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Recent Orders -->
+            <div class="recent-orders">
+                <h2>Pedidos Recientes</h2>
+                <div class="orders-list" id="ordersList">
+                    <p class="no-orders">No tienes pedidos aún</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modals -->
+    <div id="addFundsModal" class="modal">
+        <div class="modal-content electric-form">
+            <span class="close" onclick="closeModal('addFundsModal')">&times;</span>
+            <h2><i class="fas fa-wallet"></i> Añadir Fondos</h2>
+            <p>Contacta con nuestro soporte para añadir fondos a tu cuenta:</p>
+            <div class="support-buttons">
+                <a href="https://wa.me/573234135603" target="_blank" class="support-btn whatsapp">
+                    <i class="fab fa-whatsapp"></i>
+                    <span>WhatsApp 1</span>
+                </a>
+                <a href="https://wa.me/573150233701" target="_blank" class="support-btn whatsapp">
+                    <i class="fab fa-whatsapp"></i>
+                    <span>WhatsApp 2</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success/Error Messages -->
+    <div id="successMessage" class="success-message">
+        <i class="fas fa-check-circle"></i>
+        <span id="successText"></span>
+    </div>
+
+    <div id="errorMessage" class="error-message">
+        <i class="fas fa-exclamation-circle"></i>
+        <span id="errorText"></span>
+    </div>
+
+    <script src="dashboard.js"></script>
+</body>
+</html>

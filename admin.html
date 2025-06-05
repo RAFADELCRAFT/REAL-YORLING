@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración - Jorling Seguidores</title>
+    <link rel="stylesheet" href="admin.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="electric-bg"></div>
+    
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="logo">
+                <h1><i class="fas fa-shield-alt"></i> Panel de Administración</h1>
+                <p>Jorling Seguidores</p>
+            </div>
+            <div class="admin-actions">
+                <button class="btn-logout" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Admin Dashboard -->
+    <main class="admin-dashboard">
+        <div class="container">
+            <!-- Stats Cards -->
+            <div class="stats-cards">
+                <div class="stat-card electric-border">
+                    <div class="card-content">
+                        <i class="fas fa-users"></i>
+                        <h3>Total Usuarios</h3>
+                        <p id="totalUsers">0</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card electric-border">
+                    <div class="card-content">
+                        <i class="fas fa-shopping-cart"></i>
+                        <h3>Total Pedidos</h3>
+                        <p id="totalOrders">0</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card electric-border">
+                    <div class="card-content">
+                        <i class="fas fa-dollar-sign"></i>
+                        <h3>Ingresos Totales</h3>
+                        <p id="totalRevenue">$0.00</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card electric-border">
+                    <div class="card-content">
+                        <i class="fas fa-chart-line"></i>
+                        <h3>Pedidos Hoy</h3>
+                        <p id="todayOrders">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions Section -->
+            <div class="quick-actions">
+                <h2>Acciones Rápidas</h2>
+                <div class="quick-buttons">
+                    <button class="quick-btn" onclick="showQuickRecharge()">
+                        <i class="fas fa-bolt"></i>
+                        <span>Recarga Rápida</span>
+                    </button>
+                    <button class="quick-btn" onclick="showBulkRecharge()">
+                        <i class="fas fa-users"></i>
+                        <span>Recarga Masiva</span>
+                    </button>
+                    <button class="quick-btn" onclick="refreshData()">
+                        <i class="fas fa-sync-alt"></i>
+                        <span>Actualizar Datos</span>
+                    </button>
+                    <button class="quick-btn" onclick="exportUsers()">
+                        <i class="fas fa-download"></i>
+                        <span>Exportar Usuarios</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick Recharge Modal -->
+            <div id="quickRechargeModal" class="modal">
+                <div class="modal-content electric-form">
+                    <span class="close" onclick="closeModal('quickRechargeModal')">&times;</span>
+                    <h2><i class="fas fa-zap"></i> Recarga Rápida</h2>
+                    <form id="quickRechargeForm">
+                        <div class="input-group">
+                            <label for="quickUserSearch">Buscar Usuario:</label>
+                            <input type="text" id="quickUserSearch" placeholder="Nombre de usuario o email" required>
+                            <div id="userSuggestions" class="suggestions-list"></div>
+                        </div>
+                        <div class="quick-amounts">
+                            <label>Montos Rápidos:</label>
+                            <div class="amount-buttons">
+                                <button type="button" class="amount-btn" onclick="setQuickAmount(5)">$5</button>
+                                <button type="button" class="amount-btn" onclick="setQuickAmount(10)">$10</button>
+                                <button type="button" class="amount-btn" onclick="setQuickAmount(25)">$25</button>
+                                <button type="button" class="amount-btn" onclick="setQuickAmount(50)">$50</button>
+                                <button type="button" class="amount-btn" onclick="setQuickAmount(100)">$100</button>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label for="quickAmount">Monto Personalizado ($):</label>
+                            <input type="number" id="quickAmount" step="0.01" min="0.01" placeholder="0.00">
+                        </div>
+                        <button type="submit" class="btn-submit">
+                            <i class="fas fa-lightning-bolt"></i> Recargar Ahora
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Bulk Recharge Modal -->
+            <div id="bulkRechargeModal" class="modal">
+                <div class="modal-content electric-form">
+                    <span class="close" onclick="closeModal('bulkRechargeModal')">&times;</span>
+                    <h2><i class="fas fa-users"></i> Recarga Masiva</h2>
+                    <div class="bulk-recharge-content">
+                        <div class="input-group">
+                            <label for="bulkAmount">Monto para todos ($):</label>
+                            <input type="number" id="bulkAmount" step="0.01" min="0.01" placeholder="0.00">
+                        </div>
+                        <div class="user-selection">
+                            <label>Seleccionar Usuarios:</label>
+                            <div class="user-checkboxes" id="userCheckboxes">
+                                <!-- Users will be loaded here -->
+                            </div>
+                        </div>
+                        <div class="bulk-summary">
+                            <p>Usuarios seleccionados: <span id="selectedCount">0</span></p>
+                            <p>Total a recargar: $<span id="totalBulkAmount">0.00</span></p>
+                        </div>
+                        <button onclick="processBulkRecharge()" class="btn-submit">
+                            <i class="fas fa-bolt"></i> Procesar Recarga Masiva
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Management -->
+            <div class="management-section">
+                <h2>Gestión de Usuarios</h2>
+                <div class="search-bar">
+                    <input type="text" id="userSearch" placeholder="Buscar usuario por nombre o email...">
+                    <button onclick="searchUsers()"><i class="fas fa-search"></i></button>
+                </div>
+                
+                <div class="users-table-container">
+                    <table class="users-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Usuario</th>
+                                <th>Email</th>
+                                <th>Saldo</th>
+                                <th>Pedidos</th>
+                                <th>Registro</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <!-- Users will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Add Balance Modal -->
+            <div id="addBalanceModal" class="modal">
+                <div class="modal-content electric-form">
+                    <span class="close" onclick="closeModal('addBalanceModal')">&times;</span>
+                    <h2><i class="fas fa-wallet"></i> Añadir Saldo</h2>
+                    <form id="addBalanceForm">
+                        <div class="input-group">
+                            <label>Usuario:</label>
+                            <input type="text" id="selectedUserName" readonly>
+                        </div>
+                        <div class="input-group">
+                            <label>Saldo Actual:</label>
+                            <input type="text" id="currentBalance" readonly>
+                        </div>
+                        <div class="input-group">
+                            <label for="amountToAdd">Cantidad a Añadir ($):</label>
+                            <input type="number" id="amountToAdd" step="0.01" min="0.01" required>
+                        </div>
+                        <button type="submit" class="btn-submit">
+                            <i class="fas fa-plus"></i> Añadir Saldo
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Recent Orders -->
+            <div class="recent-orders-admin">
+                <h2>Pedidos Recientes</h2>
+                <div class="orders-table-container">
+                    <table class="orders-table">
+                        <thead>
+                            <tr>
+                                <th>ID Pedido</th>
+                                <th>Usuario</th>
+                                <th>Servicio</th>
+                                <th>Cantidad</th>
+                                <th>Precio</th>
+                                <th>Estado</th>
+                                <th>Fecha</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersTableBody">
+                            <!-- Orders will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Success/Error Messages -->
+    <div id="successMessage" class="success-message">
+        <i class="fas fa-check-circle"></i>
+        <span id="successText"></span>
+    </div>
+
+    <div id="errorMessage" class="error-message">
+        <i class="fas fa-exclamation-circle"></i>
+        <span id="errorText"></span>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html>
